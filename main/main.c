@@ -53,10 +53,10 @@ void app_main()
     };
 
     //Initialize the SPI bus
-    ret=spi_bus_initialize(VSPI_HOST, &buscfg, 1);
+    ret=spi_bus_initialize(HSPI_HOST, &buscfg, 1);
     assert(ret==ESP_OK);
     //Attach the LCD to the SPI bus
-    lcd_attach(VSPI_HOST, PIN_NUM_CS, 0, 10000000); 
+    lcd_attach(HSPI_HOST, PIN_NUM_CS, 0, 10000000); 
     //Initialize the LCD
     lcd_init(PIN_NUM_DC, PIN_NUM_RST);
     //Go do nice stuff.
