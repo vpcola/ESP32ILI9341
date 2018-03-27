@@ -95,6 +95,9 @@ void lcd_circle(int x0, int y0, int r, uint16_t color);
 void lcd_fill_circle(int x0, int y0, int r, uint16_t color);
 void lcd_rect(int x0, int y0, int x1, int y1, uint16_t color);
 void lcd_fill_rect(int x0, int y0, int x1, int y1, uint16_t color);
+void lcd_round_rect(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t r, uint16_t color);
+void lcd_fill_round_rect(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t r, uint16_t color);
+
 
 // Text based routines
 void lcd_setfont(unsigned char * font);

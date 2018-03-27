@@ -78,6 +78,10 @@ void app_main()
         //vTaskDelay(1000 / portTICK_RATE_MS );
         //lcd_circle(120, 180, 50, Black);
         //vTaskDelay(1000 / portTICK_RATE_MS );
+        lcd_circle(100,100, 30, White);
+        //lcd_fill_circle(120, 180, 50, White);
+        lcd_round_rect(100, 100, 100, 100, 10, Red);
+        lcd_fill_circle(120, 120, 50, Yellow);
         lcd_printf("Vergil %i\n", i);
         i++;
         vTaskDelay(1000 / portTICK_RATE_MS);

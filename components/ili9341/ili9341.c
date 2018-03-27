@@ -434,8 +434,109 @@ void lcd_line(int x0, int y0, int x1, int y1, uint16_t color)
     return;
 }
 
-void lcd_circle(int x0, int y0, int r, uint16_t color)
+static void lcd_circle_helper(int16_t x0, int16_t y0, int16_t r, uint8_t cornername, uint16_t color)
 {
+    int16_t f = 1 - r;
+    int16_t ddF_x = 1;
+    int16_t ddF_y = -2 * r;
+    int16_t x = 0;
+    int16_t y = r;
+
+    while (x < y)
+    {
+        if ( f >= 0 )
+        {
+            y--;
+            ddF_y += 2;
+            f += ddF_y;
+        }
+        x++;
+        ddF_x += 2;
+        f += ddF_x;
+        if (cornername & 0x4)
+        {
+            lcd_pixel( x0 + x, y0 + y, color );
+            lcd_pixel( x0 + y, y0 + x, color );
+        }
+        if (cornername & 0x02)
+        {
+            lcd_pixel( x0 + x, y0 - y, color );
+            lcd_pixel( x0 + y, y0 - x, color );
+        }
+        if (cornername & 0x8)
+        {
+            lcd_pixel( x0 - y, y0 + x, color );
+            lcd_pixel( x0 - x, y0 + y, color ); 
+        }
+        if (cornername & 0x1)
+        {
+            lcd_pixel( x0 - y, y0 - x, color );
+            lcd_pixel( x0 - x, y0 - y, color );
+        }
+   }
+}
+
+static void lcd_fill_circle_helper(int16_t x0, int16_t y0, int16_t r, uint8_t cornername, int16_t delta, uint16_t color)
+{
+	int16_t f = 1 - r;
+	int16_t ddF_x = 1;
+	int16_t ddF_y = -2 * r;
+	int16_t x = 0;
+	int16_t y = r;
+	int16_t ylm = x0 - r;
+
+	while (x < y) {
+		if (f >= 0) {
+			if (cornername & 0x1) lcd_vline(x0 + y, y0 - x, x0 + (2 * x + 1 + delta), color);
+			if (cornername & 0x2) lcd_vline(x0 - y, y0 - x, x0 + (2 * x + 1 + delta), color);
+			ylm = x0 - y;
+			y--;
+			ddF_y += 2;
+			f += ddF_y;
+		}
+		x++;
+		ddF_x += 2;
+		f += ddF_x;
+
+		if ((x0 - x) > ylm) {
+			if (cornername & 0x1) lcd_vline(x0 + x, y0 - y, x0 + (2 * y + 1 + delta), color);
+			if (cornername & 0x2) lcd_vline(x0 - x, y0 - y, x0 + (2 * y + 1 + delta), color);
+		}
+	}
+}
+
+void lcd_circle(int x, int y, int r, uint16_t color)
+{
+	int f = 1 - r;
+	int ddF_x = 1;
+	int ddF_y = -2 * r;
+	int x1 = 0;
+	int y1 = r;
+
+	lcd_pixel(x, y + r, color);
+	lcd_pixel(x, y - r, color);
+	lcd_pixel(x + r, y, color);
+	lcd_pixel(x - r, y, color);
+	while(x1 < y1) {
+		if (f >= 0) {
+			y1--;
+			ddF_y += 2;
+			f += ddF_y;
+		}
+		x1++;
+		ddF_x += 2;
+		f += ddF_x;
+		lcd_pixel(x + x1, y + y1, color);
+		lcd_pixel(x - x1, y + y1, color);
+		lcd_pixel(x + x1, y - y1, color);
+		lcd_pixel(x - x1, y - y1, color);
+		lcd_pixel(x + y1, y + x1, color);
+		lcd_pixel(x - y1, y + x1, color);
+		lcd_pixel(x + y1, y - x1, color);
+		lcd_pixel(x - y1, y - x1, color);
+	}
+
+    /*
     int x = -r, y = 0, err = 2-2*r, e2;
     do {
         lcd_pixel( x0-x, y0+y, color);
@@ -449,10 +550,15 @@ void lcd_circle(int x0, int y0, int r, uint16_t color)
         }
         if (e2 > x) err += ++x*2+1;
     } while (x <= 0);
+    */
 }
 
 void lcd_fill_circle(int x0, int y0, int r, uint16_t color)
 {
+	lcd_vline(x0, y0-r, x0 + (2*r+1), color);
+	lcd_fill_circle_helper(x0, y0, r, 3, 0, color);
+
+    /* 
     int x = -r, y = 0, err = 2-2*r, e2;
     do {
         lcd_vline( x0-x, y0-y, y0+y, color);
@@ -464,6 +570,7 @@ void lcd_fill_circle(int x0, int y0, int r, uint16_t color)
         }
         if (e2 > x) err += ++x*2+1;
     } while (x <= 0);
+    */
 }
 
 void lcd_rect(int x0, int y0, int x1, int y1, uint16_t color)
@@ -517,6 +624,31 @@ void lcd_fill_rect(int x0, int y0, int x1, int y1, uint16_t color)
 
     }
     lcd_window_max();
+}
+
+void lcd_round_rect(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t r, uint16_t color)
+{
+	// smarter version
+	lcd_hline(x + r, x + (w - r), y, color);			// Top
+	lcd_hline(x + r, x + (w - r), y + h - 1, color);	// Bottom
+	lcd_vline(x, y + r, y + (h - r), color);			// Left
+	lcd_vline(x + w - 1, y + r, y + (h - r), color);	// Right
+
+	// draw four corners
+	lcd_circle_helper(x + r, y + r, r, 1, color);
+	lcd_circle_helper(x + w - r - 1, y + r, r, 2, color);
+	lcd_circle_helper(x + w - r - 1, y + h - r - 1, r, 4, color);
+	lcd_circle_helper(x + r, y + h - r - 1, r, 8, color);
+}
+
+void lcd_fill_round_rect(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t r, uint16_t color)
+{
+	// smarter version
+	lcd_fill_rect(x + r, y, x + (w - r), y + h, color);
+
+	// draw four corners
+	lcd_fill_circle_helper(x + w - r - 1, y + r, r, 1, h - 2 * r - 1, color);
+	lcd_fill_circle_helper(x + r, y + r, r, 2, h - 2 * r - 1, color);
 }
 
 void lcd_setfont(unsigned char * f)
