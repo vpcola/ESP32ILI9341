@@ -24,6 +24,24 @@ static spi_device_handle_t spi;
  * lcd_init() call
  **/
 static gpio_num_t dcpin;
+
+/**
+ * The current font in use
+ **/
+static uint8_t * font = NULL;
+
+/**
+ * Current character location
+ **/
+static uint16_t char_x = 0;
+static uint16_t char_y = 0;
+
+/**
+ * Current background and foreground
+ * color for text
+ **/
+static uint16_t background = Black;
+static uint16_t foreground = White;
     
 DRAM_ATTR static const lcd_init_cmd_t ili_init_cmds[]={
    {0xCF, {0x00, 0x83, 0X30}, 3},
@@ -501,4 +519,127 @@ void lcd_fill_rect(int x0, int y0, int x1, int y1, uint16_t color)
     lcd_window_max();
 }
 
+void lcd_setfont(unsigned char * f)
+{
+    font = f;
+}
+
+uint8_t lcd_columns()
+{
+    return lcd_width() / font[1];
+}
+
+uint8_t lcd_rows()
+{
+    return lcd_height() / font[2];
+}
+
+void lcd_locate(int x, int y)
+{
+    char_x = x;
+    char_y = y;
+}
+
+void lcd_character(int x, int y, int c)
+{
+    unsigned int hor,vert,offset,bpl,j,i,b;
+    unsigned char* charoffset;
+    unsigned char z, w = 0;
+
+    // return if no font is selected
+    if (font == NULL)
+        return;
+
+    if ((c < 31) || (c > 127)) return;   // test char range
+    // read font parameter from start of array
+    offset = font[0];                    // bytes / char
+    hor = font[1];                       // get hor size of font
+    vert = font[2];                      // get vert size of font
+    bpl = font[3];                       // bytes per line
+
+    // Get the offset to the sign/symbol.
+    charoffset = &font[((c -32) * offset) + 4]; // start of char bitmap
+
+    // Calculate if we are within bounds, fix
+    // char_x and char_y if out of bounds
+    if (char_x + hor > lcd_width()) {
+        char_x = 0;
+        char_y = char_y + vert;
+        if (char_y >= lcd_height() - font[2]) {
+            char_y = 0;
+        }
+    }
+
+    // Allocate data for transfers
+    // vertical bytes * horizontal bytes * 2 bytes per pizel. 
+    uint16_t *chardata = heap_caps_malloc( vert * hor * 2, MALLOC_CAP_DMA);
+    uint16_t numsend = 0;
+    if (chardata)
+    {
+        w = charoffset[0];     // width of actual char
+        for (j=0; j<vert; j++) // Process vertical line
+        {  
+            for (i=0; i<hor; i++) // Process horizontal line 
+            {   
+                // Move to the start of the pixel array (skip the first byte, since its the 
+                // encoded width)
+                z =  charoffset[bpl * i + ((j & 0xF8) >> 3) + 1];
+                b = 1 << (j & 0x07);
+
+                if (( z & b ) == 0x00) {
+                    chardata[numsend]   = background; 
+                } else {
+                    chardata[numsend]   = foreground;
+                }
+
+                numsend ++;
+            }
+        }
+
+        // Define the character box
+        lcd_window(char_x, char_y,hor,vert); 
+        // Send pixel command
+        lcd_cmd(0x2C);  
+        // Send data over spi
+        lcd_data((const uint8_t *) chardata, (numsend * 2)); // at 16bit per pixel
+        // Delete the buffer
+        free(chardata);
+    }
+
+    lcd_window_max();
+    if ((w + 2) < hor) {                   // x offset to next char
+        char_x += w + 2;
+    } else char_x += hor;
+}
+
+void lcd_putchar(char c)
+{
+    if (c == '\n') {    // new line
+        char_x = 0;
+        char_y = char_y + font[2];
+        if (char_y >= lcd_height() - font[2]) {
+            char_y = 0;
+        }
+    } else {
+        lcd_character(char_x, char_y, c);
+    }
+}
+
+void lcd_printf(const char * format, ...)
+{
+    char buffer[256];
+    uint8_t i, buflen;
+
+    va_list args;
+    va_start(args, format);
+    vsprintf(buffer, format, args);
+    
+    buflen = strlen(&buffer[0]);
+    for (i = 0; i < buflen; i++)
+    {
+        lcd_putchar(buffer[i]);
+    }
+    
+    va_end(args);
+}
 

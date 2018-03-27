@@ -18,6 +18,7 @@
 #include "esp_heap_caps.h"
 
 #include "ili9341.h"
+#include "Arial12x12.h"
 
 /*
  This code displays some fancy graphics on the 320x240 LCD on an ESP-WROVER_KIT board.
@@ -43,6 +44,7 @@
 
 void app_main()
 {
+    int i = 0;
     esp_err_t ret;
     spi_bus_config_t buscfg={
         .miso_io_num=PIN_NUM_MISO,
@@ -53,27 +55,32 @@ void app_main()
     };
 
     //Initialize the SPI bus
-    ret=spi_bus_initialize(HSPI_HOST, &buscfg, 1);
+    ret=spi_bus_initialize(VSPI_HOST, &buscfg, 1);
     assert(ret==ESP_OK);
     //Attach the LCD to the SPI bus
-    lcd_attach(HSPI_HOST, PIN_NUM_CS, 0, 10000000); 
+    lcd_attach(VSPI_HOST, PIN_NUM_CS, 0, 10000000); 
     //Initialize the LCD
     lcd_init(PIN_NUM_DC, PIN_NUM_RST);
     //Go do nice stuff.
+    lcd_clear(Black);
+    lcd_setfont(&Arial12x12[0]);
+    lcd_locate(10,30);
     while(1)
     {
-        lcd_clear(Black);
-        vTaskDelay(1000 / portTICK_RATE_MS );
-        lcd_clear(Red);
-        vTaskDelay(1000 / portTICK_RATE_MS );
-        lcd_rect(100, 100, 150, 150, Yellow);
-        vTaskDelay(1000 / portTICK_RATE_MS );
-        lcd_fill_rect(50, 50, 100, 100, Blue);
-        vTaskDelay(1000 / portTICK_RATE_MS );
-        lcd_line(10, 10, 200, 200, Yellow);
-        vTaskDelay(1000 / portTICK_RATE_MS );
-        lcd_circle(120, 180, 50, Black);
-        vTaskDelay(1000 / portTICK_RATE_MS );
+        //vTaskDelay(1000 / portTICK_RATE_MS );
+        //lcd_clear(Red);
+        //vTaskDelay(1000 / portTICK_RATE_MS );
+        //lcd_rect(100, 100, 150, 150, Yellow);
+        //vTaskDelay(1000 / portTICK_RATE_MS );
+        //lcd_fill_rect(50, 50, 100, 100, Blue);
+        //vTaskDelay(1000 / portTICK_RATE_MS );
+        //lcd_line(10, 10, 200, 200, Yellow);
+        //vTaskDelay(1000 / portTICK_RATE_MS );
+        //lcd_circle(120, 180, 50, Black);
+        //vTaskDelay(1000 / portTICK_RATE_MS );
+        lcd_printf("Vergil %i\n", i);
+        i++;
+        vTaskDelay(1000 / portTICK_RATE_MS);
     }
 
 }

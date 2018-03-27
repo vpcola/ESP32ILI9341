@@ -1,6 +1,10 @@
 #ifndef _ILI9341_H_
 #define _ILI9341_H_
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+
 #include "esp_system.h"
 #include "driver/spi_master.h"
 #include "soc/gpio_struct.h"
@@ -70,9 +74,20 @@ uint32_t lcd_get_id();
  **/
 void lcd_init(gpio_num_t dc, gpio_num_t reset);
 
-
+/**
+ * Displays a single color pixel on screen 
+ * @param x The x coordinate 
+ * @param y The y coordinate
+ * @param color The color of the pixel to display
+ **/
 void lcd_pixel(int x, int y, uint16_t color);
+
+/**
+ * Clears the display with a background color
+ * @param backcolor The background color
+ **/
 void lcd_clear(uint16_t backcolor);
+
 void lcd_hline(int x0, int x1, int y, uint16_t color);
 void lcd_vline(int x, int y0, int y1, uint16_t color);
 void lcd_line(int x0, int y0, int x1, int y1, uint16_t color);
@@ -80,6 +95,15 @@ void lcd_circle(int x0, int y0, int r, uint16_t color);
 void lcd_fill_circle(int x0, int y0, int r, uint16_t color);
 void lcd_rect(int x0, int y0, int x1, int y1, uint16_t color);
 void lcd_fill_rect(int x0, int y0, int x1, int y1, uint16_t color);
+
+// Text based routines
+void lcd_setfont(unsigned char * font);
+uint8_t lcd_columns();
+uint8_t lcd_rows();
+void lcd_locate(int x, int y);
+void lcd_character(int x, int y, int c);
+void lcd_putchar(char c);
+void lcd_printf(const char * format, ...);
 
 #endif
 
